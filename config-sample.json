@@ -1,0 +1,19 @@
+{
+    "obs": {
+        "host": "localhost",
+        "port": 4444,
+        "password": ""
+    },
+    "tallies": [
+        {
+            "name": "Camera 1",
+            "pin": 1,
+            "low_active": true
+        },
+        {
+            "name": "Camera 2",
+            "pin": 2,
+            "low_active": false
+        }
+    ]
+}

@@ -1,0 +1,157 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "type": "object",
+    "title": "obs-tally-pi configuration",
+    "description": "Contains all settings for obs-tally-pi",
+    "default": {},
+    "examples": [
+        {
+            "obs": {
+                "host": "localhost",
+                "port": 4444,
+                "password": ""
+            },
+            "tallies": [
+                {
+                    "name": "Camera 1",
+                    "pin": 1,
+                    "low_active": true
+                },
+                {
+                    "name": "Camera 2",
+                    "pin": 2,
+                    "low_active": false
+                }
+            ]
+        }
+    ],
+    "required": [
+        "obs",
+        "tallies"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "obs": {
+            "$id": "#/properties/obs",
+            "type": "object",
+            "title": "OBS Websocket API",
+            "description": "Connection parameters for the OBS Websocket API",
+            "default": {},
+            "examples": [
+                {
+                    "host": "localhost",
+                    "port": 4444,
+                    "password": ""
+                }
+            ],
+            "required": [
+                "host",
+                "port",
+                "password"
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "host": {
+                    "$id": "#/properties/obs/properties/host",
+                    "type": "string",
+                    "title": "The host running OBS",
+                    "description": "Either an IP address or a hostname",
+                    "default": "",
+                    "examples": [
+                        "localhost",
+                        "127.0.0.1",
+                        "::1"
+                    ]
+                },
+                "port": {
+                    "$id": "#/properties/obs/properties/port",
+                    "type": "integer",
+                    "title": "The OBS Websocket port",
+                    "description": "The port that the Websocket API listens on",
+                    "default": 0,
+                    "examples": [
+                        4444
+                    ]
+                },
+                "password": {
+                    "$id": "#/properties/obs/properties/password",
+                    "type": "string",
+                    "title": "API password",
+                    "description": "This is set in the OBS websocket settings. Leave blank for no password.",
+                    "default": "",
+                    "examples": [
+                        "",
+                        "joshua"
+                    ]
+                }
+            }
+        },
+        "tallies": {
+            "$id": "#/properties/tallies",
+            "type": "array",
+            "title": "Tallies",
+            "description": "A list of connected camera lights",
+            "default": [],
+            "additionalItems": true,
+            "items": {
+                "obs": {
+                    "$id": "#/properties/tallies/tally",
+                    "type": "object",
+                    "title": "Tally Light",
+                    "description": "Description of a single tally light connected to the Pi",
+                    "default": {},
+                    "examples": [
+                        {
+                            "name": "Camera 1",
+                            "pin": 1,
+                            "low_active": true
+                        },
+                        {
+                            "name": "Camera 2",
+                            "pin": 2,
+                            "low_active": false
+                        }
+                    ],
+                    "required": [
+                        "name",
+                        "pin",
+                        "low_active"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "name": {
+                            "$id": "#/properties/tallies/tally/properties/name",
+                            "type": "string",
+                            "title": "The name of the Source",
+                            "description": "Must be equal to the source name in OBS",
+                            "default": "",
+                            "examples": [
+                                "Camera 1",
+                                "Scene X"
+                            ]
+                        },
+                        "pin": {
+                            "$id": "#/properties/tallies/tally/properties/pin",
+                            "type": "integer",
+                            "title": "Pin",
+                            "description": "The number of the GPIO pin with which the light is connected to the Pi",
+                            "default": "",
+                            "examples": [
+                                13,
+                                7
+                            ]
+                        },
+                        "low_active": {
+                            "$id": "#/properties/tallies/tally/properties/low_active",
+                            "type": "boolean",
+                            "title": "low active",
+                            "description": "If this is set to true, in order to turn on the light, the GPIO pin is set to LOW",
+                            "default": ""
+                        }
+                    }
+                },
+                "$id": "#/properties/tallies/items"
+            }
+        }
+    }
+}

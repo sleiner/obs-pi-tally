@@ -3,8 +3,10 @@ from dataclasses import dataclass
 from threading import Condition
 from time import sleep
 from typing import List
+from argparse import ArgumentParser
 
 import obswebsocket
+from dataclasses_json import dataclass_json
 from obswebsocket import events, requests
 
 
@@ -22,14 +24,26 @@ class Tally:
 
 
 @dataclass
+class ObsApi:
+    host: str
+    port: int
+    password: str
+
+
+@dataclass_json
+@dataclass
 class Config:
+    obs: ObsApi
     tallies: List[Tally]
 
 
 cv = Condition()
 scenes = dict()
-config = Config([Tally("iPhone 7: USB", pin=1, low_active=True),
-                 Tally("iPhone XS: USB", pin=2, low_active=False)])
+
+parser = ArgumentParser(
+    description="Switch LED lights according to sources in OBS scenes")
+parser.add_argument(
+    "-c", metavar="CONFIG_FILE", type=str, help="Path to the config file", required=True)
 
 
 def __list_sources(scene, scenelist, including_invisible: bool):
@@ -92,9 +106,18 @@ def __update_scenes_and_leds(ws_client: obswebsocket.obsws):
 
 
 def main():
+    global config
     global scenes, cv
 
-    client = obswebsocket.obsws()
+    args = parser.parse_args()
+    configfile = args.c
+
+    with open(configfile, "r") as file:
+        text = file.read()
+        config = Config.from_json(text)  # pylint: disable=no-member
+
+    client = obswebsocket.obsws(
+        host=config.obs.host, port=config.obs.port, password=config.obs.password)
     client.register(on_scene_change, events.SwitchScenes)
     client.register(on_event)
     for event in [events.ScenesChanged,
