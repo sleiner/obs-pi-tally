@@ -1,10 +1,12 @@
 import logging
+from argparse import ArgumentParser
 from dataclasses import dataclass
 from threading import Condition
 from time import sleep
-from typing import List
-from argparse import ArgumentParser
+from typing import Dict, List
 
+import gpiozero
+import gpiozero.pins.mock
 import obswebsocket
 from dataclasses_json import dataclass_json
 from obswebsocket import events, requests
@@ -16,7 +18,7 @@ class Source:
     kind: str
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class Tally:
     name: str
     pin: int
@@ -37,8 +39,23 @@ class Config:
     tallies: List[Tally]
 
 
+class LedInterface:
+    def __init__(self, tallies: List[Tally]):
+        self.__leds = {tally: gpiozero.LED(
+            pin=tally.pin, active_high=not tally.low_active) for tally in tallies}
+
+    def turn_on(self, tally: Tally) -> None:
+        logging.debug(f"Tally {tally.name} (Pin {tally.pin}): ON")
+        self.__leds[tally].on()
+
+    def turn_off(self, tally: Tally) -> None:
+        logging.debug(f"Tally {tally.name} (Pin {tally.pin}): OFF")
+        self.__leds[tally].off()
+
+
 cv = Condition()
 scenes = dict()
+leds: LedInterface = None
 
 parser = ArgumentParser(
     description="Switch LED lights according to sources in OBS scenes")
@@ -68,12 +85,24 @@ def list_sources(scene, including_invisible: bool = False):
     return result
 
 
+def set_gpio_state(pin_nr: int, state: bool):
+    print(f"{pin_nr} => {'HIGH' if state else 'LOW'}")
+
+
+def apply_to_leds(target_state: Dict[Tally, bool]):
+    for tally, status in target_state.items():
+        if status:
+            leds.turn_on(tally)
+        else:
+            leds.turn_off(tally)
+
+
 def update_leds(scene):
     sources_in_scene = list_sources(scene)
     source_names_in_scene = [source.name for source in sources_in_scene]
-    tally_state = [(tally, tally.name in source_names_in_scene)
-                   for tally in config.tallies]
-    print(tally_state)
+    tally_state = {tally: (tally.name in source_names_in_scene)
+                   for tally in config.tallies}
+    apply_to_leds(tally_state)
 
 
 def on_scene_change(event):
@@ -107,6 +136,7 @@ def __update_scenes_and_leds(ws_client: obswebsocket.obsws):
 
 def main():
     global config
+    global leds
     global scenes, cv
 
     args = parser.parse_args()
@@ -116,6 +146,20 @@ def main():
         text = file.read()
         config = Config.from_json(text)  # pylint: disable=no-member
 
+    # Initialize LEDs
+    try:
+        gpiozero.LED()
+    except gpiozero.exc.BadPinFactory:
+        # Platform does not support real LEDs => use mock instead
+        gpiozero.Device.pin_factory = gpiozero.pins.mock.MockFactory()
+    except gpiozero.exc.GPIOPinMissing:
+        # this is normal as we haven't given any pin number.
+        # But we seem to be able to open a GPIO port :-)
+        pass
+
+    leds = LedInterface(config.tallies)
+
+    # Connect to OBS
     client = obswebsocket.obsws(
         host=config.obs.host, port=config.obs.port, password=config.obs.password)
     client.register(on_scene_change, events.SwitchScenes)
