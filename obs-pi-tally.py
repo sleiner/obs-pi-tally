@@ -1,4 +1,5 @@
 import logging
+import sys
 from argparse import ArgumentParser
 from dataclasses import dataclass
 from threading import Condition
@@ -119,10 +120,13 @@ def __update_scenes(ws_client: obswebsocket.obsws) -> List:
     # returns the list of sources in the current scene
     global scenes
 
-    scenelist = ws_client.call(requests.GetSceneList())
-    scenes = {s['name']: s['sources'] for s in scenelist.getScenes()}
-    current = scenelist.getCurrentScene()
-    return scenes[current]
+    try:
+        scenelist = ws_client.call(requests.GetSceneList())
+        scenes = {s['name']: s['sources'] for s in scenelist.getScenes()}
+        current = scenelist.getCurrentScene()
+        return scenes[current]
+    except:
+        sys.exit()
 
 
 def __update_scenes_and_leds(ws_client: obswebsocket.obsws):
@@ -168,6 +172,7 @@ def main():
                   events.SceneItemVisibilityChanged,
                   ]:
         client.register(trigger_scenelist_update, event)
+    client.register(sys.exit, events.Exiting)
     client.connect()
 
     __update_scenes_and_leds(client)
@@ -175,7 +180,7 @@ def main():
     try:
         while True:
             with cv:
-                cv.wait()  # ... until a scenelist update was triggered
+                cv.wait(timeout=5)  # ... until scenelist update was triggered
                 __update_scenes_and_leds(client)
     except KeyboardInterrupt:
         pass
