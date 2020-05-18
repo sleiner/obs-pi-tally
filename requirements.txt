@@ -1,3 +1,4 @@
 dataclasses-json==0.4.2
 gpiozero==1.5.1
 obs-websocket-py==0.5.1
+rpi-gpio==0.7.0
