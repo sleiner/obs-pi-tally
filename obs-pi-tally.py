@@ -110,10 +110,6 @@ def on_scene_change(event):
     update_leds(event.getSources())
 
 
-def on_event(event):
-    logging.debug(f" => Received {event}")
-
-
 def trigger_scenelist_update(*args):
     with cv:
         cv.notify()
@@ -163,7 +159,6 @@ def main():
     client = obswebsocket.obsws(
         host=config.obs.host, port=config.obs.port, password=config.obs.password)
     client.register(on_scene_change, events.SwitchScenes)
-    client.register(on_event)
     for event in [events.ScenesChanged,
                   events.SourceCreated,
                   events.SourceDestroyed,
