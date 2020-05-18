@@ -1,0 +1,13 @@
+[Unit]
+Description=OBS Tally Light
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi/obs-pi-tally
+ExecStart=/home/pi/obs-pi-tally/env/bin/python3 obs-pi-tally.py -c config.json
+User=pi
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
